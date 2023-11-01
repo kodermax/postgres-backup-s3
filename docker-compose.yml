@@ -2,8 +2,11 @@ version: "3"
 
 services:
   postgres-backup:
-    image: backuptools/postgres-backup-s3
-    build: .
+    image: kodermax/postgres-backup-s3
+    build:
+      context: .
+      dockerfile: Dockerfile
+      network: host
     environment:
       - S3_BUCK=postgres1-backups
       - S3_NAME=folder-name/backup-name-prefix
