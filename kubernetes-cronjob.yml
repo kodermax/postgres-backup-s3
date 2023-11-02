@@ -15,18 +15,19 @@ spec:
         spec:
           restartPolicy: OnFailure
           containers:
-          - name: postgres-backup-my-app
-            image: backuptools/postgres-backup-s3
-            env:
-              - name: PG_URI
-                value: postgres://db-svc-or-hostname:27017/dbname
-                # Available: pigz, xz, bzip2, lrzip, brotli, zstd
-              - name: COMPRESS
-                value: pigz
-              - name: S3_URI
-                value: https://your-key:your-secret@s3.host.tld
-              - name: S3_NAME
-                value: folder-name/backup-name
-              - name: S3_BUCK
-                value: backup-s3-bucket-name
+            - name: postgres-backup-my-app
+              image: backuptools/postgres-backup-s3
+              env:
+                - name: PG_URI
+                  value: postgres://db-svc-or-hostname:5632/dbname
+                  # Available: pigz, xz, bzip2, lrzip, brotli, zstd
+                - name: COMPRESS
+                  value: pigz
+                - name: S3_URI
+                  value: https://your-key:your-secret@s3.host.tld
+                - name: S3_NAME
+                  value: folder-name/backup-name
+                - name: S3_BUCK
+                  value: backup-s3-bucket-name
 ---
+
