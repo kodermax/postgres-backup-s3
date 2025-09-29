@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -u
 set -o pipefail
 
 # Date function
@@ -13,14 +14,35 @@ get_date () {
 : ${COMPRESS:='pigz'}
 : ${COMPRESS_LEVEL:='9'}
 : ${MAINTENANCE_DB:='postgres'}
+: ${S3_KEEP_DAYS:=''}
+: ${PGCONNECT_TIMEOUT:='10'}
 START_DATE=`date +%Y-%m-%d_%H-%M-%S`
+
+# Required envs
+if [ -z "${PG_URI:-}" ] || [ -z "${S3_URI:-}" ] || [ -z "${S3_BUCK:-}" ] || [ -z "${S3_NAME:-}" ]; then
+    echo "$(get_date) Missing required envs. Need PG_URI, S3_URI, S3_BUCK, S3_NAME"
+    exit 1
+fi
+
+trap 'echo "$(get_date) Backup failed" >&2' ERR
 
 if [ -z "$GPG_KEYID" ]
 then
     echo "$(get_date) !WARNING! It's strongly recommended to encrypt your backups."
 else
     echo "$(get_date) Preparing keys: importing from keyserver"
-    gpg --keyserver ${GPG_KEYSERVER} --recv-keys ${GPG_KEYID}
+    # Retry import up to 3 times in case keyserver is unstable
+    for i in 1 2 3; do
+        if gpg --keyserver ${GPG_KEYSERVER} --keyserver-options timeout=10 --recv-keys ${GPG_KEYID}; then
+            break
+        fi
+        echo "$(get_date) GPG import failed (attempt $i). Retrying..."
+        sleep 2
+        if [ "$i" = "3" ]; then
+            echo "$(get_date) Failed to import GPG key after retries" >&2
+            exit 1
+        fi
+    done
 fi
 
 echo "$(get_date) Postgres backup started"
@@ -62,8 +84,8 @@ esac
 
 dump_db(){
   DATABASE=$1
-  # Ping databaase
-  psql ${PG_URI%/}/${DATABASE} -c ''
+  # Ping database
+  psql ${PG_URI%/}/${DATABASE} -v ON_ERROR_STOP=1 -c ''
 
   echo "$(get_date) Dumping database: $DATABASE"
 
@@ -93,6 +115,18 @@ then
 else
   PG_URI=${PG_URI%$DB_NAME}
   dump_db "$DB_NAME"
+fi
+
+if [ -n "$S3_KEEP_DAYS" ]
+then
+	echo "$(get_date) Retention enabled: removing backups older than ${S3_KEEP_DAYS} days from S3"
+	# Remove objects matching naming scheme and older than specified days
+	# Matches both encrypted and non-encrypted backups due to '*.pgdump*'
+	mc find backup/${S3_BUCK} \
+		--insecure \
+		--name "${S3_NAME}-*.pgdump*" \
+		--older-than "${S3_KEEP_DAYS}d" \
+		--exec "mc rm --force {} --insecure" || true
 fi
 
 echo "$(get_date) Postgres backup completed successfully"
