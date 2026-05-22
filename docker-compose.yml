@@ -1,5 +1,3 @@
-version: "3"
-
 services:
   postgres-backup:
     image: kodermax/postgres-backup-s3
@@ -7,6 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
       network: host
+    restart: on-failure
     environment:
       - S3_BUCK=postgres1-backups
       - S3_NAME=folder-name/backup-name-prefix

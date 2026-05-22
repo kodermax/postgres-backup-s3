@@ -11,12 +11,20 @@ spec:
   failedJobsHistoryLimit: 10
   jobTemplate:
     spec:
+      activeDeadlineSeconds: 3600
       template:
         spec:
           restartPolicy: OnFailure
           containers:
             - name: postgres-backup-my-app
               image: backuptools/postgres-backup-s3
+              resources:
+                requests:
+                  cpu: "100m"
+                  memory: "128Mi"
+                limits:
+                  cpu: "500m"
+                  memory: "512Mi"
               env:
                 - name: PG_URI
                   value: postgres://db-svc-or-hostname:5632/dbname
@@ -29,5 +37,3 @@ spec:
                   value: folder-name/backup-name
                 - name: S3_BUCK
                   value: backup-s3-bucket-name
----
-

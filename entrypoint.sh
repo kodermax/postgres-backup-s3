@@ -65,7 +65,7 @@ case $COMPRESS in
       COMPRESS_POSTFIX='.bz2'
     ;;
   'lrzip' )
-      COMPRESS_CMD='lrzip -l -L5'
+      COMPRESS_CMD="lrzip -l -L${COMPRESS_LEVEL}"
       COMPRESS_POSTFIX='.lrz'
     ;;
   'brotli' )
@@ -85,7 +85,7 @@ esac
 dump_db(){
   DATABASE=$1
   # Ping database
-  psql ${PG_URI%/}/${DATABASE} -v ON_ERROR_STOP=1 -c ''
+  pg_isready -d "${PG_URI%/}/${DATABASE}" -t 10
 
   echo "$(get_date) Dumping database: $DATABASE"
 

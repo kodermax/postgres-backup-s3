@@ -9,15 +9,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Get the version
+      - uses: actions/checkout@v4
+
+      - name: Get short SHA
         id: vars
-        run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
       - name: Build the Docker image
-        run: docker build . --file Dockerfile --tag kodermax/postgres-backup-s3:${{steps.vars.outputs.sha_short}} --tag kodermax/postgres-backup-s3
-      - name: Login to Dockerhub
-        run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
-      - name: Push the Docker image
-        run: docker push kodermax/postgres-backup-s3:${{steps.vars.outputs.sha_short}}
-      - name: Push the :latest Docker image
-        run: docker push kodermax/postgres-backup-s3
+        run: |
+          docker build . \
+            --file Dockerfile \
+            --tag kodermax/postgres-backup-s3:${{ steps.vars.outputs.sha_short }} \
+            --tag kodermax/postgres-backup-s3:latest
+
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Push SHA-tagged image
+        run: docker push kodermax/postgres-backup-s3:${{ steps.vars.outputs.sha_short }}
+
+      - name: Push latest image
+        run: docker push kodermax/postgres-backup-s3:latest
