@@ -18,9 +18,9 @@ RUN apt-get update \
 	&& update-ca-certificates \
 	&& MC_URL="https://dl.min.io/client/mc/release/linux-amd64/mc" \
 	&& if [ "$MC_VERSION" != "latest" ]; then MC_URL="https://dl.min.io/client/mc/release/linux-amd64/archive/mc.${MC_VERSION}"; fi \
-	&& MC_FILENAME=$(basename "${MC_URL}") \
-	&& wget -q "${MC_URL}" -O "/tmp/${MC_FILENAME}" \
 	&& wget -q "${MC_URL}.sha256sum" -O /tmp/mc.sha256sum \
+	&& MC_FILENAME=$(awk '{print $2}' /tmp/mc.sha256sum) \
+	&& wget -q "${MC_URL}" -O "/tmp/${MC_FILENAME}" \
 	&& cd /tmp && sha256sum -c mc.sha256sum \
 	&& mv "/tmp/${MC_FILENAME}" /sbin/mc \
 	&& chmod +x /sbin/mc \
