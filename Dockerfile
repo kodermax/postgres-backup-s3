@@ -27,5 +27,7 @@ RUN apt-get update \
 	&& apt-get purge -y --auto-remove wget \
 	&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+ENV MC_CONFIG_DIR=/tmp/mc-config
+
 COPY --chmod=755 entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
